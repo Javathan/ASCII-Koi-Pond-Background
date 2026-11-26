@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+output/
+*.mp4
+*.png
+!docs/*.png
+.DS_Store
+Thumbs.db
