@@ -17,13 +17,13 @@ from .glyphs import RAMP, build_atlas
 from .koi import TAU, Koi
 
 BACKGROUND = np.array([6, 11, 15], dtype=np.float32)
-WATER_DEEP = np.array([12, 32, 42], dtype=np.float32)
-WATER_LIGHT = np.array([64, 138, 148], dtype=np.float32)
-PAD_DARK = np.array([30, 84, 44], dtype=np.float32)
-PAD_LIGHT = np.array([96, 168, 82], dtype=np.float32)
-PETAL = np.array([242, 160, 198], dtype=np.float32)
-PETAL_TIP = np.array([252, 222, 236], dtype=np.float32)
-POLLEN = np.array([250, 214, 92], dtype=np.float32)
+WATER_DEEP = np.array([8, 34, 52], dtype=np.float32)
+WATER_LIGHT = np.array([26, 150, 176], dtype=np.float32)
+PAD_DARK = np.array([22, 104, 40], dtype=np.float32)
+PAD_LIGHT = np.array([92, 214, 70], dtype=np.float32)
+PETAL = np.array([255, 112, 176], dtype=np.float32)
+PETAL_TIP = np.array([255, 214, 234], dtype=np.float32)
+POLLEN = np.array([255, 216, 40], dtype=np.float32)
 
 
 @dataclass
@@ -32,13 +32,15 @@ class SceneConfig:
     height: int = 1080
     cell_w: int = 8
     cell_h: int = 14
-    duration: float = 30.0
-    fps: int = 30
+    duration: float = 60.0
+    fps: int = 60
     koi: int = 8
     pads: int = 7
     ripples: int = 7
     seed: int = 7
     font: str | None = None
+    speed: float = 1.0
+    saturation: float = 1.25
 
     @property
     def frames(self) -> int:
@@ -126,12 +128,12 @@ class Pond:
         gy = (np.arange(self.rows) + 0.5) * cfg.cell_h + self.pad_y
         self.cx, self.cy = np.meshgrid(gx, gy)
 
-        self.atlas = build_atlas(cfg.cell_w, cfg.cell_h, cfg.font, RAMP)
+        self.atlas = build_atlas(cfg.cell_w, cfg.cell_h, cfg.font, RAMP, bold=cfg.cell_h >= 18)
         scale = cfg.height / 1080.0
         self.scale = scale
 
         rng = np.random.default_rng(cfg.seed)
-        self.koi = sorted((Koi(rng, cfg.width, cfg.height, cfg.duration, scale) for _ in range(cfg.koi)),
+        self.koi = sorted((Koi(rng, cfg.width, cfg.height, cfg.duration, scale, cfg.speed) for _ in range(cfg.koi)),
                           key=lambda k: -k.depth)
         self.pads = [LilyPad(rng, cfg.width, cfg.height, cfg.duration, scale) for _ in range(cfg.pads)]
         self.drops = [(rng.uniform(0.05, 0.95) * cfg.width, rng.uniform(0.05, 0.95) * cfg.height,
@@ -139,7 +141,7 @@ class Pond:
 
         nx = (self.cx - cfg.width / 2) / (cfg.width / 2)
         ny = (self.cy - cfg.height / 2) / (cfg.height / 2)
-        self.vignette = np.clip(1.0 - 0.35 * (nx ** 2 + ny ** 2) ** 1.5, 0.35, 1.0)
+        self.vignette = np.clip(1.0 - 0.25 * (nx ** 2 + ny ** 2) ** 1.5, 0.5, 1.0)
 
     # ------------------------------------------------------------------ layers
     def _water(self, t: float):
@@ -154,7 +156,7 @@ class Pond:
              + np.sin(xw * 0.012 - yw * 0.019 + w + 2.1)
              + np.sin(np.hypot(xw - 900, yw - 500) * 0.018 - 2 * w))
         caustic = (1.0 - np.abs(f) / 4.0) ** 10
-        lum = 0.02 + 0.3 * caustic
+        lum = 0.02 + 0.24 * caustic
         mix = np.clip(caustic * 1.4, 0.0, 1.0)[..., None]
         col = WATER_DEEP + (WATER_LIGHT - WATER_DEEP) * mix
         return lum, col
@@ -189,7 +191,7 @@ class Pond:
             sub_col[sm] *= 0.5
 
             u, vn, body, tail, pect = fish.geometry(t, centers)
-            fade = 1.0 - 0.45 * fish.depth
+            fade = 1.0 - 0.3 * fish.depth
 
             if tail.any() or pect.any():
                 fins = tail | pect
@@ -248,6 +250,8 @@ class Pond:
             pad.draw(t, self.cx, self.cy, lum, col)
 
         col = col * self.vignette[..., None]
+        gray = col.mean(axis=-1, keepdims=True)
+        col = np.clip(gray + (col - gray) * self.cfg.saturation, 0.0, 255.0)
         idx = np.clip(np.rint(lum * (len(RAMP) - 1)), 0, len(RAMP) - 1).astype(np.int32)
         return self._compose(idx, col)
 

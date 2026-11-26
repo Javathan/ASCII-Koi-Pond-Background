@@ -18,6 +18,16 @@ from PIL import Image, ImageDraw, ImageFont
 # per-cell luminance value in the range [0, 1].
 RAMP = " .,:;-~=+*ox#%@"
 
+_BOLD_FONT_CANDIDATES = {
+    "win32": ["consolab.ttf", "courbd.ttf"],
+    "darwin": ["/System/Library/Fonts/Menlo.ttc"],
+    "linux": [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+        "/usr/share/fonts/TTF/DejaVuSansMono-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
+    ],
+}
+
 _FONT_CANDIDATES = {
     "win32": [
         "CascadiaMono.ttf",
@@ -44,10 +54,11 @@ def _system_font_dirs() -> list[Path]:
     return []
 
 
-def find_monospace_font() -> str | None:
+def find_monospace_font(bold: bool = False) -> str | None:
     """Return the path of a monospace TrueType font available on this system."""
     key = "win32" if sys.platform == "win32" else "darwin" if sys.platform == "darwin" else "linux"
-    for candidate in _FONT_CANDIDATES[key]:
+    candidates = (_BOLD_FONT_CANDIDATES[key] if bold else []) + _FONT_CANDIDATES[key]
+    for candidate in candidates:
         path = Path(candidate)
         if path.is_absolute() and path.exists():
             return str(path)
@@ -57,12 +68,14 @@ def find_monospace_font() -> str | None:
     return None
 
 
-def build_atlas(cell_w: int, cell_h: int, font_path: str | None = None, chars: str = RAMP) -> np.ndarray:
+def build_atlas(cell_w: int, cell_h: int, font_path: str | None = None, chars: str = RAMP,
+                bold: bool = False) -> np.ndarray:
     """Render ``chars`` into a float32 array of shape (len(chars), cell_h, cell_w).
 
-    Values are coverage in the range [0, 1].
+    Values are coverage in the range [0, 1]. ``bold`` prefers a bold font face,
+    which keeps glyphs saturated and legible at high resolutions.
     """
-    font_path = font_path or find_monospace_font()
+    font_path = font_path or find_monospace_font(bold)
     size = max(6, int(round(cell_h * 0.95)))
     if font_path:
         font = ImageFont.truetype(font_path, size)
