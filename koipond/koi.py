@@ -18,13 +18,13 @@ SPINE_U = np.linspace(0.0, 1.32, 56)
 
 VARIETIES = ("kohaku", "sanke", "showa", "tancho", "ogon", "chagoi", "yamabuki", "asagi")
 
-WHITE = (238, 234, 226)
-RED = (222, 62, 34)
-BLACK = (28, 28, 34)
-GOLD = (240, 178, 64)
-ORANGE = (230, 116, 42)
-YELLOW = (246, 212, 98)
-SLATE = (112, 142, 172)
+WHITE = (252, 250, 244)
+RED = (240, 38, 18)
+BLACK = (22, 22, 30)
+GOLD = (255, 186, 30)
+ORANGE = (255, 112, 14)
+YELLOW = (255, 222, 52)
+SLATE = (86, 142, 214)
 
 
 @dataclass
@@ -84,7 +84,8 @@ def tail_half_width(u: np.ndarray) -> np.ndarray:
 
 
 class Koi:
-    def __init__(self, rng: np.random.Generator, width: int, height: int, duration: float, scale: float):
+    def __init__(self, rng: np.random.Generator, width: int, height: int, duration: float, scale: float,
+                 speed: float = 1.0):
         self.duration = duration
         self.length = rng.uniform(240.0, 360.0) * scale
         self.depth = rng.uniform(0.0, 1.0)
@@ -112,10 +113,10 @@ class Koi:
         self.path_length = float(self._arc[-1])
 
         # Choose laps and tail beats so that motion is periodic over the loop.
-        target_speed = rng.uniform(70.0, 120.0) * scale
+        target_speed = rng.uniform(32.0, 52.0) * scale * speed
         self.laps = max(1, int(round(target_speed * duration / self.path_length)))
-        self.beats = max(1, int(round(rng.uniform(0.9, 1.4) * duration)))
-        self.fin_beats = max(1, int(round(rng.uniform(0.4, 0.7) * duration)))
+        self.beats = max(1, int(round(rng.uniform(0.55, 0.8) * speed * duration)))
+        self.fin_beats = max(1, int(round(rng.uniform(0.25, 0.4) * speed * duration)))
         self.wiggle = rng.uniform(0.045, 0.075)
 
     # ------------------------------------------------------------------ motion
