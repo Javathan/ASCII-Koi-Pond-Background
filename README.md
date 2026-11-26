@@ -15,6 +15,10 @@ patterns shimmer along the pond floor.
   and Asagi, each with procedurally generated markings.
 - **Layered scene.** Water caustics, depth-tinted fish with cast shadows, animated
   pectoral and caudal fins, surface ripples, lily pads and lotus flowers.
+- **High fidelity.** Renders at native 1440p and 60 frames per second by default,
+  using a bold monospace face and a tunable saturation boost for vivid color.
+- **Calm motion.** Fish glide slowly across a 60 second loop; swimming speed is
+  adjustable from the command line.
 - **Any resolution.** Render at 1080p, 1440p, 4K or ultrawide; the character grid
   scales with the output height.
 - **Reproducible.** Each pond layout is determined by a seed, so a favorite pond
@@ -22,7 +26,7 @@ patterns shimmer along the pond floor.
 
 ## Download
 
-A ready-to-use 1080p loop is attached to the
+A ready-to-use 2560x1440, 60 fps loop is attached to the
 [latest release](../../releases/latest). To render a different resolution or
 pond layout, build it from source as described below.
 
@@ -41,7 +45,7 @@ python -m pip install -r requirements.txt
 
 ## Usage
 
-Render the default 1080p, 30 second loop to `output/koi_pond_1080p.mp4`:
+Render the default 2560x1440, 60 fps, 60 second loop to `output/koi_pond_1440p.mp4`:
 
 ```bash
 python render.py
@@ -51,6 +55,12 @@ Render a 4K loop:
 
 ```bash
 python render.py --width 3840 --height 2160
+```
+
+Render a lighter 1080p, 30 fps loop for older hardware:
+
+```bash
+python render.py --width 1920 --height 1080 --fps 30
 ```
 
 Render a single frame for previewing a layout before committing to a full render:
@@ -63,17 +73,19 @@ python render.py --still preview.png --at 12
 
 | Option        | Default            | Description                                           |
 |---------------|--------------------|-------------------------------------------------------|
-| `--width`     | `1920`             | Output width in pixels                                |
-| `--height`    | `1080`             | Output height in pixels                               |
-| `--fps`       | `30`               | Frames per second                                     |
-| `--duration`  | `30`               | Loop length in seconds                                |
+| `--width`     | `2560`             | Output width in pixels                                |
+| `--height`    | `1440`             | Output height in pixels                               |
+| `--fps`       | `60`               | Frames per second                                     |
+| `--duration`  | `60`               | Loop length in seconds                                |
+| `--speed`     | `1.0`              | Swimming speed multiplier                             |
+| `--saturation`| `1.25`             | Color saturation multiplier                           |
 | `--cell`      | scales with height | Character cell size as `WxH`, for example `10x18`     |
 | `--koi`       | `8`                | Number of fish                                        |
 | `--pads`      | `7`                | Number of lily pads                                   |
 | `--ripples`   | `7`                | Surface ripples per loop                              |
 | `--seed`      | `7`                | Random seed that determines the pond layout           |
 | `--font`      | system monospace   | Path to a monospace `.ttf` font                       |
-| `--crf`       | `18`               | x264 quality factor; lower values mean higher quality |
+| `--crf`       | `14`               | x264 quality factor; lower values mean higher quality |
 | `-o`          | `output/...`       | Output video path                                     |
 
 ## Setting it as your wallpaper
@@ -91,7 +103,7 @@ video wallpaper utility.
 `xwinwrap` with `mpv` on X11:
 
 ```bash
-mpvpaper -o "loop no-audio" '*' output/koi_pond_1080p.mp4
+mpvpaper -o "loop no-audio" '*' output/koi_pond_1440p.mp4
 ```
 
 ## How it works
@@ -105,7 +117,8 @@ density ramp (` .,:;-~=+*ox#%@`), and an RGB color, which tints that glyph.
 2. **Koi.** Each fish follows a closed curve built from a rotated ellipse with
    low-order harmonics. A spine of points is placed along the curve by arc length
    behind the head, and a travelling wave bends it to produce the swimming
-   motion. Every cell near the fish is projected onto the spine to recover its
+   motion. Lap counts and tail beats are rounded to whole cycles per loop, so a
+   very low `--speed` with a short `--duration` will be raised to one full lap. Every cell near the fish is projected onto the spine to recover its
    position along the body and across it, which drives the body outline, fins,
    shading and color markings.
 3. **Ripples and lily pads.** Expanding rings are added to the surface, and lily
