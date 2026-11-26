@@ -38,8 +38,8 @@ pond layout, build it from source as described below.
 ## Installation
 
 ```bash
-git clone https://github.com/Javathan/ascii-koi-pond-background.git
-cd ascii-koi-pond-background
+git clone https://github.com/Javathan/ASCII-Koi-Pond-Background.git
+cd ASCII-Koi-Pond-Background
 python -m pip install -r requirements.txt
 ```
 
